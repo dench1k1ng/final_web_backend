@@ -7,7 +7,7 @@ const {
     updateCategory,
     deleteCategory
 } = require('../controllers/categoryController');
-const { protect, authorize } = require('../middleware/authMiddleware');
+const { protect } = require('../middleware/authMiddleware');
 
 router
     .route('/')

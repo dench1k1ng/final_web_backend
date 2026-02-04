@@ -12,7 +12,7 @@ const User = require('./models/User');
 
 async function grantAdmin(email) {
     try {
-        await mongoose.connect(process.env.MONGO_URI);
+        await mongoose.connect(process.env.MONGODB_URI);
 
         const user = await User.findOne({ email });
 

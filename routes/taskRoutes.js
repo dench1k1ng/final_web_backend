@@ -7,7 +7,7 @@ const {
     updateTask,
     deleteTask
 } = require('../controllers/taskController');
-const { protect, authorize } = require('../middleware/authMiddleware');
+const { protect } = require('../middleware/authMiddleware');
 
 /* 
    Ideally for a "To-Do List" where users have their own tasks, 

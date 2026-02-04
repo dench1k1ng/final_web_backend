@@ -20,6 +20,10 @@ const TaskSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    dueDate: {
+        type: Date,
+        default: null
+    },
     category: {
         type: mongoose.Schema.ObjectId,
         ref: 'Category',

@@ -13,8 +13,8 @@ let currentUser = null;
 let categories = [];
 let tasks = [];
 let selectedCategory = 'all';
-let users = []; // Admin: list of all users
-let viewingUserId = null; // Admin: currently viewing tasks for this user (null = own tasks)
+let users = [];
+let viewingUserId = null;
 
 // DOM Elements
 const elements = {
@@ -38,22 +38,62 @@ const elements = {
     // Tasks
     addTaskCard: document.getElementById('addTaskCard'),
     taskForm: document.getElementById('taskForm'),
+    taskFormTitle: document.getElementById('taskFormTitle'),
     taskCategory: document.getElementById('taskCategory'),
     taskList: document.getElementById('taskList'),
+    taskSubmitBtn: document.getElementById('taskSubmitBtn'),
+    cancelEditBtn: document.getElementById('cancelEditBtn'),
+    editTaskId: document.getElementById('editTaskId'),
+    taskDueDate: document.getElementById('taskDueDate'),
 
-    // Filters
+    // Toolbar
+    searchInput: document.getElementById('searchInput'),
     filterPriority: document.getElementById('filterPriority'),
     filterStatus: document.getElementById('filterStatus'),
+    sortBy: document.getElementById('sortBy'),
+
+    // Stats
+    statsBar: document.getElementById('statsBar'),
 
     // Admin Panel
     adminPanel: document.getElementById('adminPanel'),
     userSelect: document.getElementById('userSelect'),
     selectedUserInfo: document.getElementById('selectedUserInfo'),
     selectedUserName: document.getElementById('selectedUserName'),
-    backToMyTasks: document.getElementById('backToMyTasks')
+    backToMyTasks: document.getElementById('backToMyTasks'),
+
+    // Toast & Loading
+    toastContainer: document.getElementById('toastContainer'),
+    loadingOverlay: document.getElementById('loadingOverlay')
 };
 
-// Initialize
+// ==================== TOAST NOTIFICATIONS ====================
+
+function showToast(message, type = 'success') {
+    const icons = { success: '✅', error: '❌', warning: '⚠️' };
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `<span>${icons[type] || ''}</span><span>${message}</span>`;
+    elements.toastContainer.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+// ==================== LOADING ====================
+
+let loadingCount = 0;
+function showLoading() {
+    loadingCount++;
+    elements.loadingOverlay.classList.add('active');
+}
+function hideLoading() {
+    loadingCount = Math.max(0, loadingCount - 1);
+    if (loadingCount === 0) {
+        elements.loadingOverlay.classList.remove('active');
+    }
+}
+
+// ==================== INIT ====================
+
 document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
@@ -76,11 +116,13 @@ function setupEventListeners() {
 
     // Forms
     elements.categoryForm.addEventListener('submit', handleAddCategory);
-    elements.taskForm.addEventListener('submit', handleAddTask);
+    elements.taskForm.addEventListener('submit', handleTaskSubmit);
 
-    // Filters
+    // Toolbar
+    elements.searchInput.addEventListener('input', renderTasks);
     elements.filterPriority.addEventListener('change', renderTasks);
     elements.filterStatus.addEventListener('change', renderTasks);
+    elements.sortBy.addEventListener('change', renderTasks);
 
     // Admin Panel
     if (elements.userSelect) {
@@ -125,13 +167,12 @@ function updateUIForUser() {
     elements.userRole.textContent = currentUser.role;
     elements.userRole.className = `role-badge ${currentUser.role}`;
 
-    // All logged-in users can add tasks and categories
     elements.addTaskCard.classList.remove('hidden');
     elements.addCategoryCard.classList.remove('hidden');
 
     if (currentUser.role === 'admin') {
         elements.adminPanel.classList.remove('hidden');
-        fetchUsers(); // Load user list for admin
+        fetchUsers();
     } else {
         elements.adminPanel.classList.add('hidden');
     }
@@ -145,6 +186,7 @@ function updateUIForGuest() {
     elements.addTaskCard.classList.add('hidden');
     elements.adminPanel.classList.add('hidden');
     elements.selectedUserInfo.classList.add('hidden');
+    elements.statsBar.classList.add('hidden');
     currentUser = null;
     users = [];
     viewingUserId = null;
@@ -189,6 +231,7 @@ async function handleLogin(e) {
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
 
+    showLoading();
     try {
         const res = await fetch(`${API.auth}/login`, {
             method: 'POST',
@@ -205,12 +248,15 @@ async function handleLogin(e) {
             closeAuthModal();
             updateUIForUser();
             fetchTasks();
+            showToast(`Welcome back, ${currentUser.username}!`);
         } else {
             showAuthAlert(data.error || 'Login failed');
         }
     } catch (err) {
         console.error('Login error:', err);
         showAuthAlert(`Network error: ${err.message}. Is the server running?`);
+    } finally {
+        hideLoading();
     }
 }
 
@@ -220,6 +266,7 @@ async function handleRegister(e) {
     const email = document.getElementById('regEmail').value;
     const password = document.getElementById('regPassword').value;
 
+    showLoading();
     try {
         const res = await fetch(`${API.auth}/register`, {
             method: 'POST',
@@ -236,12 +283,15 @@ async function handleRegister(e) {
             closeAuthModal();
             updateUIForUser();
             fetchTasks();
+            showToast(`Welcome, ${currentUser.username}! Account created.`);
         } else {
             showAuthAlert(Array.isArray(data.error) ? data.error.join(', ') : data.error);
         }
     } catch (err) {
         console.error('Register error:', err);
         showAuthAlert(`Network error: ${err.message}. Is the server running?`);
+    } finally {
+        hideLoading();
     }
 }
 
@@ -249,11 +299,12 @@ function logout() {
     token = null;
     localStorage.removeItem('token');
     currentUser = null;
-    tasks = []; // Clear tasks data
-    selectedCategory = 'all'; // Reset category
+    tasks = [];
+    selectedCategory = 'all';
     updateUIForGuest();
-    renderTasks(); // Render empty state
-    renderCategories(); // Reset categories view
+    renderTasks();
+    renderCategories();
+    cancelEdit();
 }
 
 // ==================== CATEGORIES ====================
@@ -283,11 +334,15 @@ function renderCategories() {
 
     const categoryItems = categories.map(cat => {
         const count = tasks.filter(t => t.category && t.category._id === cat._id).length;
+        const canDelete = currentUser;
         return `
             <li class="category-item ${selectedCategory === cat._id ? 'active' : ''}" 
                 data-id="${cat._id}" onclick="selectCategory('${cat._id}')">
                 <span class="category-name">📁 ${escapeHtml(cat.name)}</span>
-                <span class="category-count">${count}</span>
+                <span style="display:flex;align-items:center;gap:0.4rem;">
+                    <span class="category-count">${count}</span>
+                    ${canDelete ? `<button class="btn-danger" style="padding:0.15rem 0.35rem;font-size:0.65rem;" onclick="event.stopPropagation();deleteCategory('${cat._id}')" title="Delete category">🗑️</button>` : ''}
+                </span>
             </li>
         `;
     }).join('');
@@ -313,6 +368,7 @@ async function handleAddCategory(e) {
     const name = document.getElementById('categoryName').value;
     const description = document.getElementById('categoryDesc').value;
 
+    showLoading();
     try {
         const res = await fetch(API.categories, {
             method: 'POST',
@@ -328,17 +384,21 @@ async function handleAddCategory(e) {
         if (res.ok) {
             elements.categoryForm.reset();
             await fetchCategories();
+            showToast(`Category "${name}" created!`);
         } else {
-            alert(Array.isArray(data.error) ? data.error.join(', ') : data.error);
+            showToast(Array.isArray(data.error) ? data.error.join(', ') : data.error, 'error');
         }
     } catch (err) {
-        alert('Error adding category');
+        showToast('Error adding category', 'error');
+    } finally {
+        hideLoading();
     }
 }
 
 async function deleteCategory(id) {
-    if (!confirm('Delete this category? Tasks in this category will remain but lose their category.')) return;
+    if (!confirm('Delete this category and all its tasks?')) return;
 
+    showLoading();
     try {
         const res = await fetch(`${API.categories}/${id}`, {
             method: 'DELETE',
@@ -349,11 +409,14 @@ async function deleteCategory(id) {
             if (selectedCategory === id) selectedCategory = 'all';
             await fetchCategories();
             await fetchTasks();
+            showToast('Category deleted');
         } else {
-            alert('Failed to delete category');
+            showToast('Failed to delete category', 'error');
         }
     } catch (err) {
-        alert('Error deleting category');
+        showToast('Error deleting category', 'error');
+    } finally {
+        hideLoading();
     }
 }
 window.deleteCategory = deleteCategory;
@@ -415,7 +478,6 @@ function backToMyTasks() {
 // ==================== TASKS ====================
 
 async function fetchTasks() {
-    // If not logged in, don't fetch (route is protected)
     if (!token) {
         tasks = [];
         renderCategories();
@@ -423,18 +485,18 @@ async function fetchTasks() {
         return;
     }
 
+    showLoading();
     try {
         let url;
         const headers = { 'Authorization': `Bearer ${token}` };
 
-        // Admin logic
         if (currentUser?.role === 'admin') {
             if (viewingUserId === 'all') {
                 url = `${API.tasks}?all=true`;
             } else if (viewingUserId) {
                 url = `${API.users}/${viewingUserId}/tasks`;
             } else {
-                url = API.tasks; // Own tasks
+                url = API.tasks;
             }
         } else {
             url = API.tasks;
@@ -447,8 +509,8 @@ async function fetchTasks() {
             tasks = data.data;
             renderCategories();
             renderTasks();
+            renderStats();
         } else if (res.status === 401) {
-            // Token expired or invalid
             logout();
         } else {
             console.error('Error fetching tasks:', res.status);
@@ -459,11 +521,44 @@ async function fetchTasks() {
         console.error('Error fetching tasks:', err);
         tasks = [];
         renderTasks();
+    } finally {
+        hideLoading();
     }
+}
+
+function renderStats() {
+    if (!currentUser || tasks.length === 0) {
+        elements.statsBar.classList.add('hidden');
+        return;
+    }
+
+    const total = tasks.length;
+    const completed = tasks.filter(t => t.completed).length;
+    const pending = total - completed;
+    const overdue = tasks.filter(t => !t.completed && t.dueDate && new Date(t.dueDate) < new Date()).length;
+    const highPriority = tasks.filter(t => !t.completed && t.priority === 'high').length;
+
+    elements.statsBar.classList.remove('hidden');
+    elements.statsBar.innerHTML = `
+        <div class="stat"><strong>${total}</strong> Total</div>
+        <div class="stat"><strong>${completed}</strong> Done</div>
+        <div class="stat"><strong>${pending}</strong> Pending</div>
+        ${highPriority > 0 ? `<div class="stat" style="border-color:var(--danger)"><strong>${highPriority}</strong> High Priority</div>` : ''}
+        ${overdue > 0 ? `<div class="stat" style="border-color:var(--danger);color:var(--danger)"><strong>${overdue}</strong> Overdue</div>` : ''}
+    `;
 }
 
 function renderTasks() {
     let filtered = [...tasks];
+
+    // Search filter
+    const search = elements.searchInput.value.toLowerCase().trim();
+    if (search) {
+        filtered = filtered.filter(t =>
+            t.name.toLowerCase().includes(search) ||
+            (t.description && t.description.toLowerCase().includes(search))
+        );
+    }
 
     // Category filter
     if (selectedCategory !== 'all') {
@@ -482,8 +577,32 @@ function renderTasks() {
         filtered = filtered.filter(t => t.completed === (status === 'true'));
     }
 
-    // Sort by date (newest first)
-    filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    // Sorting
+    const sortBy = elements.sortBy.value;
+    const priorityWeight = { high: 3, medium: 2, low: 1 };
+
+    switch (sortBy) {
+        case 'newest':
+            filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            break;
+        case 'oldest':
+            filtered.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+            break;
+        case 'priority':
+            filtered.sort((a, b) => (priorityWeight[b.priority] || 0) - (priorityWeight[a.priority] || 0));
+            break;
+        case 'due-date':
+            filtered.sort((a, b) => {
+                if (!a.dueDate && !b.dueDate) return 0;
+                if (!a.dueDate) return 1;
+                if (!b.dueDate) return -1;
+                return new Date(a.dueDate) - new Date(b.dueDate);
+            });
+            break;
+        case 'name':
+            filtered.sort((a, b) => a.name.localeCompare(b.name));
+            break;
+    }
 
     if (filtered.length === 0) {
         elements.taskList.innerHTML = `
@@ -499,19 +618,39 @@ function renderTasks() {
     }
 
     elements.taskList.innerHTML = filtered.map(task => {
-        // Show actions if: user owns the task OR user is admin
-        // Handle both cases: task.user might be a string ID or a populated object with _id
         const taskUserId = typeof task.user === 'string' ? task.user : task.user?._id;
-        /* Handle currentUser inconsistent ID (id vs _id) */
-        const currentUserId = currentUser.id || currentUser._id;
+        const currentUserId = currentUser ? (currentUser.id || currentUser._id) : null;
 
         const canManage = currentUser && (
-            (taskUserId && taskUserId.toString() === currentUserId.toString()) ||
+            (taskUserId && currentUserId && taskUserId.toString() === currentUserId.toString()) ||
             currentUser.role === 'admin'
         );
 
+        // Due date logic
+        let dueBadge = '';
+        let isOverdue = false;
+        if (task.dueDate) {
+            const dueDate = new Date(task.dueDate);
+            const now = new Date();
+            const diffDays = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
+            const formattedDate = dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+            if (!task.completed && diffDays < 0) {
+                dueBadge = `<span class="badge overdue">⏰ Overdue (${formattedDate})</span>`;
+                isOverdue = true;
+            } else if (!task.completed && diffDays <= 2) {
+                dueBadge = `<span class="badge due-soon">📅 Due soon (${formattedDate})</span>`;
+            } else {
+                dueBadge = `<span class="badge due-date">📅 ${formattedDate}</span>`;
+            }
+        }
+
+        // Owner badge for admin viewing all tasks
+        const ownerBadge = (viewingUserId === 'all' && task.user) ?
+            `<span class="badge" style="background:var(--card-border);color:var(--text-secondary)">👤 ${escapeHtml(typeof task.user === 'string' ? task.user : task.user.username || 'Unknown')}</span>` : '';
+
         return `
-        <div class="task-item ${task.completed ? 'completed' : ''}">
+        <div class="task-item ${task.completed ? 'completed' : ''} ${isOverdue ? 'overdue' : ''}">
             <div class="task-info">
                 <div class="task-title">${escapeHtml(task.name)}</div>
                 ${task.description ? `<div class="task-desc">${escapeHtml(task.description)}</div>` : ''}
@@ -519,14 +658,19 @@ function renderTasks() {
                     <span class="badge ${task.priority}">${task.priority}</span>
                     <span class="badge ${task.completed ? 'completed' : 'pending'}">${task.completed ? 'Done' : 'Pending'}</span>
                     ${task.category ? `<span class="badge category">${escapeHtml(task.category.name)}</span>` : ''}
+                    ${dueBadge}
+                    ${ownerBadge}
                 </div>
             </div>
             ${canManage ? `
                 <div class="actions">
-                    <button class="btn-success" onclick="toggleTask('${task._id}', ${!task.completed})" title="Toggle">
+                    <button class="btn-success" onclick="toggleTask('${task._id}', ${!task.completed})" title="${task.completed ? 'Mark pending' : 'Mark done'}">
                         ${task.completed ? '↩️' : '✓'}
                     </button>
-                    <button class="btn-danger" onclick="deleteTask('${task._id}')" title="Delete">
+                    <button class="btn-warning" onclick="editTask('${task._id}')" title="Edit task">
+                        ✏️
+                    </button>
+                    <button class="btn-danger" onclick="deleteTask('${task._id}')" title="Delete task">
                         🗑️
                     </button>
                 </div>
@@ -535,38 +679,97 @@ function renderTasks() {
     `}).join('');
 }
 
-async function handleAddTask(e) {
+// ==================== TASK CRUD ====================
+
+async function handleTaskSubmit(e) {
     e.preventDefault();
+
+    const editId = elements.editTaskId.value;
 
     const name = document.getElementById('taskName').value;
     const description = document.getElementById('taskDesc').value;
     const category = document.getElementById('taskCategory').value;
     const priority = document.getElementById('taskPriority').value;
+    const dueDate = document.getElementById('taskDueDate').value || null;
 
+    const body = { name, description, category, priority, dueDate };
+
+    showLoading();
     try {
-        const res = await fetch(API.tasks, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ name, description, category, priority })
-        });
+        let res;
+        if (editId) {
+            // Update existing task
+            res = await fetch(`${API.tasks}/${editId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(body)
+            });
+        } else {
+            // Create new task
+            res = await fetch(API.tasks, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(body)
+            });
+        }
 
         const data = await res.json();
 
         if (res.ok) {
             elements.taskForm.reset();
+            elements.editTaskId.value = '';
+            cancelEdit();
             await fetchTasks();
+            showToast(editId ? 'Task updated!' : 'Task created!');
         } else {
-            alert(Array.isArray(data.error) ? data.error.join(', ') : data.error);
+            showToast(Array.isArray(data.error) ? data.error.join(', ') : data.error, 'error');
         }
     } catch (err) {
-        alert('Error adding task');
+        showToast('Error saving task', 'error');
+    } finally {
+        hideLoading();
     }
 }
 
+function editTask(id) {
+    const task = tasks.find(t => t._id === id);
+    if (!task) return;
+
+    // Populate form
+    elements.editTaskId.value = task._id;
+    document.getElementById('taskName').value = task.name;
+    document.getElementById('taskDesc').value = task.description || '';
+    document.getElementById('taskCategory').value = task.category ? task.category._id : '';
+    document.getElementById('taskPriority').value = task.priority;
+    document.getElementById('taskDueDate').value = task.dueDate ? task.dueDate.split('T')[0] : '';
+
+    // Update UI
+    elements.taskFormTitle.textContent = '✏️ Edit Task';
+    elements.taskSubmitBtn.textContent = 'Update Task';
+    elements.cancelEditBtn.classList.remove('hidden');
+
+    // Scroll to form
+    elements.addTaskCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+window.editTask = editTask;
+
+function cancelEdit() {
+    elements.editTaskId.value = '';
+    elements.taskForm.reset();
+    elements.taskFormTitle.textContent = '✨ Add New Task';
+    elements.taskSubmitBtn.textContent = 'Add Task';
+    elements.cancelEditBtn.classList.add('hidden');
+}
+window.cancelEdit = cancelEdit;
+
 async function toggleTask(id, completed) {
+    showLoading();
     try {
         const res = await fetch(`${API.tasks}/${id}`, {
             method: 'PUT',
@@ -579,11 +782,14 @@ async function toggleTask(id, completed) {
 
         if (res.ok) {
             await fetchTasks();
+            showToast(completed ? 'Task completed! 🎉' : 'Task reopened');
         } else {
-            alert('Failed to update task');
+            showToast('Failed to update task', 'error');
         }
     } catch (err) {
-        alert('Error updating task');
+        showToast('Error updating task', 'error');
+    } finally {
+        hideLoading();
     }
 }
 window.toggleTask = toggleTask;
@@ -591,6 +797,7 @@ window.toggleTask = toggleTask;
 async function deleteTask(id) {
     if (!confirm('Delete this task?')) return;
 
+    showLoading();
     try {
         const res = await fetch(`${API.tasks}/${id}`, {
             method: 'DELETE',
@@ -599,11 +806,14 @@ async function deleteTask(id) {
 
         if (res.ok) {
             await fetchTasks();
+            showToast('Task deleted');
         } else {
-            alert('Failed to delete task');
+            showToast('Failed to delete task', 'error');
         }
     } catch (err) {
-        alert('Error deleting task');
+        showToast('Error deleting task', 'error');
+    } finally {
+        hideLoading();
     }
 }
 window.deleteTask = deleteTask;

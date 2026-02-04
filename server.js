@@ -1,6 +1,7 @@
 const express = require('express');
 require('dotenv').config();
 const path = require('path');
+const cors = require('cors');
 const connectDB = require('./config/db');
 
 // Route files
@@ -14,6 +15,9 @@ const PORT = process.env.PORT || 3000;
 
 // Connect to database
 connectDB();
+
+// CORS middleware
+app.use(cors());
 
 // Body parser middleware
 app.use(express.json());
