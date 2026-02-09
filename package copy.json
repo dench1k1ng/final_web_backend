@@ -1,0 +1,33 @@
+{
+    "name": "assignment_4",
+    "version": "1.0.0",
+    "description": "Task API with MVC Architecture, JWT Auth, and RBAC",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js",
+        "dev": "nodemon server.js"
+    },
+    "keywords": [
+        "express",
+        "api",
+        "tasks",
+        "crud",
+        "nodejs",
+        "mvc",
+        "jwt",
+        "rbac"
+    ],
+    "author": "Denis",
+    "license": "ISC",
+    "type": "commonjs",
+    "dependencies": {
+        "bcryptjs": "^3.0.2",
+        "dotenv": "^17.2.3",
+        "express": "^5.2.1",
+        "jsonwebtoken": "^9.0.2",
+        "mongoose": "^9.1.4"
+    },
+    "devDependencies": {
+        "nodemon": "^3.1.9"
+    }
+}
