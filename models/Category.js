@@ -26,4 +26,10 @@ CategorySchema.virtual('tasks', {
     justOne: false
 });
 
+// Cascade delete tasks when a category is deleted
+CategorySchema.pre('deleteOne', { document: true, query: false }, async function () {
+    console.log(`Removing tasks from category ${this._id}`);
+    await this.model('Task').deleteMany({ category: this._id });
+});
+
 module.exports = mongoose.model('Category', CategorySchema);

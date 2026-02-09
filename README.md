@@ -48,9 +48,32 @@ assignment_4/
 3. **Start MongoDB** (ensure it's running locally or update URI)
 
 4. **Run the server:**
-   ```bash
-   npm start
-   ```
+   - **Development:**
+     ```bash
+     npm run dev
+     ```
+   - **Production:**
+     ```bash
+     npm start
+     ```
+
+## 🚀 Deployment (Render)
+
+1. **Push to GitHub**
+   - Ensure your project is in a GitHub repository.
+
+2. **Create Web Service on Render**
+   - Connect your GitHub repo.
+   - **Runtime:** Node
+   - **Build Command:** `npm install`
+   - **Start Command:** `npm start`
+
+3. **Environment Variables**
+   - Add the following in Render Dashboard > Environment:
+     - `MONGODB_URI`: Your production MongoDB connection string (e.g., from MongoDB Atlas).
+     - `JWT_SECRET`: A strong secret key.
+     - `JWT_EXPIRE`: `30d` (or as desired).
+
 
 ## 🔐 Authentication & Authorization
 
