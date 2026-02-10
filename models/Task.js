@@ -29,6 +29,10 @@ const TaskSchema = new mongoose.Schema({
         ref: 'Category',
         required: [true, 'Please assign a category']
     },
+    tags: [{
+        type: mongoose.Schema.ObjectId,
+        ref: 'Tag'
+    }],
     user: {
         type: mongoose.Schema.ObjectId,
         ref: 'User'

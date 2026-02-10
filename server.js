@@ -9,6 +9,9 @@ const authRoutes = require('./routes/authRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const userRoutes = require('./routes/userRoutes');
+const tagRoutes = require('./routes/tagRoutes');
+const noteRoutes = require('./routes/noteRoutes');
+const activityLogRoutes = require('./routes/activityLogRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -30,6 +33,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/tags', tagRoutes);
+app.use('/api/tasks/:taskId/notes', noteRoutes);
+app.use('/api/activity', activityLogRoutes);
 
 // Root route
 app.get('/', (req, res) => {
@@ -61,4 +67,8 @@ app.listen(PORT, () => {
     console.log('  Auth:       /api/auth');
     console.log('  Categories: /api/categories');
     console.log('  Tasks:      /api/tasks');
+    console.log('  Tags:       /api/tags');
+    console.log('  Notes:      /api/tasks/:taskId/notes');
+    console.log('  Activity:   /api/activity');
+    console.log('  Users:      /api/users (admin)');
 });

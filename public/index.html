@@ -214,7 +214,35 @@
             width: auto;
         }
 
-        /* Categories List */
+        /* ===== Floating Add Button ===== */
+        .fab {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: white;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+            z-index: 100;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .fab:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 30px rgba(99, 102, 241, 0.7);
+        }
+
+        /* ===== Categories ===== */
         .category-list {
             list-style: none;
         }
@@ -256,19 +284,7 @@
             font-size: 0.75rem;
         }
 
-        .category-actions {
-            display: flex;
-            gap: 0.25rem;
-        }
-
-        .category-actions button {
-            padding: 0.2rem 0.4rem;
-            font-size: 0.7rem;
-            border-radius: 4px;
-            width: auto;
-        }
-
-        /* Tasks */
+        /* ===== Tasks ===== */
         .task-item {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
@@ -382,8 +398,15 @@
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
         }
 
         .actions {
@@ -405,7 +428,7 @@
             opacity: 0.5;
         }
 
-        /* Auth Modal */
+        /* ===== Modals ===== */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -433,9 +456,11 @@
             border-radius: 16px;
             padding: 2rem;
             width: 100%;
-            max-width: 400px;
+            max-width: 480px;
             transform: scale(0.9);
             transition: transform 0.3s;
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
         .modal-overlay.active .modal {
@@ -494,7 +519,7 @@
             display: none !important;
         }
 
-        /* Search & Filter bar */
+        /* ===== Toolbar ===== */
         .toolbar {
             display: flex;
             gap: 0.75rem;
@@ -513,7 +538,7 @@
             min-width: 140px;
         }
 
-        /* Toast Notifications */
+        /* ===== Toast ===== */
         .toast-container {
             position: fixed;
             top: 1.5rem;
@@ -541,19 +566,38 @@
             max-width: 360px;
         }
 
-        .toast.toast-success { border-left: 4px solid var(--success); }
-        .toast.toast-error { border-left: 4px solid var(--danger); }
-        .toast.toast-warning { border-left: 4px solid var(--warning); }
+        .toast.toast-success {
+            border-left: 4px solid var(--success);
+        }
+
+        .toast.toast-error {
+            border-left: 4px solid var(--danger);
+        }
+
+        .toast.toast-warning {
+            border-left: 4px solid var(--warning);
+        }
 
         @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes fadeOut {
-            to { opacity: 0; transform: translateX(50%); }
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
 
-        /* Loading Spinner */
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: translateX(50%);
+            }
+        }
+
+        /* ===== Loading ===== */
         .loading-overlay {
             position: fixed;
             top: 0;
@@ -585,10 +629,12 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
-        /* Task form row */
+        /* ===== Task Modal Form ===== */
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -601,16 +647,17 @@
             }
         }
 
-        .form-actions {
+        .modal-footer {
             display: flex;
-            gap: 0.5rem;
+            gap: 0.75rem;
+            margin-top: 1rem;
         }
 
-        .form-actions button {
+        .modal-footer button {
             flex: 1;
         }
 
-        /* Stats bar */
+        /* ===== Stats ===== */
         .stats-bar {
             display: flex;
             gap: 1rem;
@@ -631,6 +678,100 @@
             color: var(--text-main);
             font-size: 1rem;
         }
+
+        /* ===== Landing Page ===== */
+        .landing-page {
+            text-align: center;
+            padding: 4rem 2rem 3rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .landing-page.hidden {
+            display: none;
+        }
+
+        .landing-hero h2 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .landing-hero p {
+            color: var(--text-secondary);
+            font-size: 1.15rem;
+            line-height: 1.7;
+            max-width: 550px;
+            margin: 0 auto 2.5rem;
+        }
+
+        .landing-cta {
+            padding: 1rem 3rem;
+            font-size: 1.1rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .landing-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(99, 102, 241, 0.6);
+        }
+
+        .landing-features {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-top: 4rem;
+        }
+
+        .feature-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 2rem 1.25rem;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary);
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-card strong {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin: 0;
+        }
+
+        @media (max-width: 700px) {
+            .landing-features {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .landing-hero h2 {
+                font-size: 2rem;
+            }
+        }
     </style>
 </head>
 
@@ -647,11 +788,42 @@
                 <button id="logoutBtn" class="btn-small btn-secondary hidden">Logout</button>
             </div>
         </header>
+        <!-- Landing Page (visible when not logged in) -->
+        <div id="landingPage" class="landing-page">
+            <div class="landing-hero">
+                <h2>📋 Organize Your Life</h2>
+                <p>A powerful task manager with categories, priorities, due dates, tags, notes, and activity tracking.
+                </p>
+                <button onclick="document.getElementById('authBtn').click()" class="landing-cta">🚀 Get Started — It's
+                    Free</button>
+            </div>
+            <div class="landing-features">
+                <div class="feature-card">
+                    <div class="feature-icon">📁</div>
+                    <strong>Categories</strong>
+                    <p>Organize tasks into logical groups</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🏷️</div>
+                    <strong>Tags & Notes</strong>
+                    <p>Add context and details to tasks</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <strong>Activity Log</strong>
+                    <p>Track every change you make</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <strong>Priority & Due Dates</strong>
+                    <p>Never miss a deadline again</p>
+                </div>
+            </div>
+        </div>
 
-        <div class="grid">
+        <div id="appGrid" class="grid hidden">
             <!-- Sidebar -->
-            <aside>
-                <!-- Categories Card -->
+            <aside id="sidebar" class="hidden">
                 <div class="card">
                     <h2>📁 Categories</h2>
                     <ul id="categoryList" class="category-list">
@@ -661,7 +833,6 @@
                     </ul>
                 </div>
 
-                <!-- Add Category -->
                 <div id="addCategoryCard" class="card hidden">
                     <h2>➕ Add Category</h2>
                     <form id="categoryForm">
@@ -677,7 +848,6 @@
                     </form>
                 </div>
 
-                <!-- Admin User Management Panel -->
                 <div id="adminPanel" class="card hidden">
                     <h2>👥 User Management</h2>
                     <div class="form-group">
@@ -697,51 +867,11 @@
 
             <!-- Main Content -->
             <main>
-                <!-- Add Task Card -->
-                <div id="addTaskCard" class="card hidden">
-                    <h2 id="taskFormTitle">✨ Add New Task</h2>
-                    <form id="taskForm">
-                        <input type="hidden" id="editTaskId" value="">
-                        <div class="form-group">
-                            <label for="taskName">Task Name</label>
-                            <input type="text" id="taskName" required placeholder="What needs to be done?">
-                        </div>
-                        <div class="form-group">
-                            <label for="taskDesc">Description</label>
-                            <textarea id="taskDesc" rows="2" placeholder="Add details..."></textarea>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="taskCategory">Category</label>
-                                <select id="taskCategory" required>
-                                    <option value="">Select a category</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="taskPriority">Priority</label>
-                                <select id="taskPriority">
-                                    <option value="low">Low</option>
-                                    <option value="medium" selected>Medium</option>
-                                    <option value="high">High</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="taskDueDate">Due Date (optional)</label>
-                            <input type="date" id="taskDueDate">
-                        </div>
-                        <div class="form-actions">
-                            <button type="submit" id="taskSubmitBtn">Add Task</button>
-                            <button type="button" id="cancelEditBtn" class="btn-secondary hidden" onclick="cancelEdit()">Cancel</button>
-                        </div>
-                    </form>
-                </div>
-
                 <!-- Stats Bar -->
                 <div id="statsBar" class="stats-bar hidden"></div>
 
-                <!-- Search & Filter Toolbar -->
-                <div class="toolbar">
+                <!-- Toolbar -->
+                <div id="toolbar" class="toolbar hidden">
                     <input type="text" id="searchInput" class="search-input" placeholder="🔍 Search tasks...">
                     <select id="filterPriority">
                         <option value="">All Priorities</option>
@@ -769,6 +899,9 @@
         </div>
     </div>
 
+    <!-- Floating Add Button -->
+    <button id="fabAddTask" class="fab hidden" title="Add new task">＋</button>
+
     <!-- Auth Modal -->
     <div id="authModal" class="modal-overlay">
         <div class="modal">
@@ -779,7 +912,6 @@
             </div>
             <div id="authAlert" class="alert hidden"></div>
 
-            <!-- Login Form -->
             <form id="loginForm">
                 <div class="form-group">
                     <label for="loginEmail">Email</label>
@@ -792,7 +924,6 @@
                 <button type="submit">Login</button>
             </form>
 
-            <!-- Register Form -->
             <form id="registerForm" class="hidden">
                 <div class="form-group">
                     <label for="regUsername">Username</label>
@@ -812,6 +943,48 @@
             <div style="text-align: center; margin-top: 1rem;">
                 <button type="button" class="btn-secondary btn-small" onclick="closeAuthModal()">Cancel</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Task Modal (Add / Edit) -->
+    <div id="taskModal" class="modal-overlay">
+        <div class="modal">
+            <h2 id="taskModalTitle">✨ Add New Task</h2>
+            <form id="taskForm">
+                <input type="hidden" id="editTaskId" value="">
+                <div class="form-group">
+                    <label for="taskName">Task Name</label>
+                    <input type="text" id="taskName" required placeholder="What needs to be done?">
+                </div>
+                <div class="form-group">
+                    <label for="taskDesc">Description</label>
+                    <textarea id="taskDesc" rows="2" placeholder="Add details..."></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="taskCategory">Category</label>
+                        <select id="taskCategory" required>
+                            <option value="">Select a category</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="taskPriority">Priority</label>
+                        <select id="taskPriority">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="taskDueDate">Due Date (optional)</label>
+                    <input type="date" id="taskDueDate">
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" id="taskSubmitBtn">Add Task</button>
+                    <button type="button" class="btn-secondary" onclick="closeTaskModal()">Cancel</button>
+                </div>
+            </form>
         </div>
     </div>
 

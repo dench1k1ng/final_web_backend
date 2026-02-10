@@ -1,5 +1,6 @@
 const Task = require('../models/Task');
 const Category = require('../models/Category');
+const ActivityLog = require('../models/ActivityLog');
 
 // @desc    Get all tasks for current user
 // @route   GET /api/tasks
@@ -17,7 +18,8 @@ exports.getTasks = async (req, res) => {
         // Build query
         let query = Task.find(filter)
             .populate('category', 'name')
-            .populate('user', 'username');
+            .populate('user', 'username')
+            .populate('tags', 'name color');
 
         // Filter by category if provided
         if (req.query.category) {
@@ -54,7 +56,7 @@ exports.getTasks = async (req, res) => {
 // @access  Public
 exports.getTask = async (req, res) => {
     try {
-        const task = await Task.findById(req.params.id).populate('category', 'name description');
+        const task = await Task.findById(req.params.id).populate('category', 'name description').populate('tags', 'name color');
 
         if (!task) {
             return res.status(404).json({
@@ -102,7 +104,9 @@ exports.createTask = async (req, res) => {
         }
 
         const task = await Task.create(req.body);
-        const populatedTask = await Task.findById(task._id).populate('category', 'name');
+        const populatedTask = await Task.findById(task._id).populate('category', 'name').populate('tags', 'name color');
+
+        await ActivityLog.logActivity('created', 'task', task.name, req.user.id);
 
         res.status(201).json({
             success: true,
@@ -156,10 +160,15 @@ exports.updateTask = async (req, res) => {
             }
         }
 
+        const wasCompleted = task.completed;
+
         task = await Task.findByIdAndUpdate(req.params.id, req.body, {
             new: true,
             runValidators: true
-        }).populate('category', 'name');
+        }).populate('category', 'name').populate('tags', 'name color');
+
+        const action = (!wasCompleted && task.completed) ? 'completed' : 'updated';
+        await ActivityLog.logActivity(action, 'task', task.name, req.user.id);
 
         res.status(200).json({
             success: true,
@@ -201,7 +210,10 @@ exports.deleteTask = async (req, res) => {
             });
         }
 
+        const taskName = task.name;
         await task.deleteOne();
+
+        await ActivityLog.logActivity('deleted', 'task', taskName, req.user.id);
 
         res.status(200).json({
             success: true,
